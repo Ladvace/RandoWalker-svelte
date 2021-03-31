@@ -1,10 +1,19 @@
 <script>
 	import { onMount } from 'svelte';
-	import sound from '../../static/sound.wav';
+
+	// var G : float;	//distance from the starting node to the best node
+	// var H : float;	//hurestic distance from the best node to the destination
+	// var F : float;	//total cost
+	let winWidth;
+	let winHeight;
+
 	let GRID_SIZE = 40;
+	// let GRID_SIZE = 20;
 	let TICKER_TIME = 500;
-	let grid = [...Array(GRID_SIZE)].map(() => [...Array(GRID_SIZE)].map(() => 'empty'));
-	let walkerPosition = [[GRID_SIZE / 2, GRID_SIZE / 2]];
+	let grid = [...Array(GRID_SIZE)].map(() =>
+		[...Array(GRID_SIZE)].map(() => ({ state: 'empty', f: 0, g: 0, h: 0 }))
+	);
+	// let walkerPosition = [[GRID_SIZE / 2, GRID_SIZE / 2]];
 	let walls = [];
 	let isMouseDown = false;
 	let interval;
@@ -13,30 +22,82 @@
 	let wallsCounter = 0;
 	let musicEnabled = false;
 
-	const playAudio = () => {
-		let audio = document.getElementById('audio');
+	let dragging = false;
 
-		audio.play();
+	let openSet = [];
+	let closedSet = [];
+	// let start;
+	// let end;
+
+	let start = [0, 0];
+	grid[0][0].state = 'start';
+
+	let end = [GRID_SIZE - 1, GRID_SIZE - 1];
+	grid[GRID_SIZE - 1][GRID_SIZE - 1].state = 'end';
+
+	const removeFromArr = (arr, element) => {
+		for (let i = arr.length - 1; i >= 0; i--) {
+			if ((arr[i] = element)) {
+				// arr.slice()
+				arr.splice(i, 1);
+			}
+		}
 	};
 
+	// each cell should have h g f
 	$: {
-		// console.log('TICKER_TIME', TICKER_TIME);
+		console.log('AA', winWidth, GRID_SIZE);
 		if (!paused) {
 			for (let i = 0; i < grid.length; i++) {
 				for (let k = 0; k < grid.length; k++) {
-					if (grid[i][k] === 'visited' || grid[i][k] === 'revisited') {
-						grid[i][k] = 'empty';
+					if (
+						grid[i][k].state === 'visited' ||
+						grid[i][k].state === 'revisited' ||
+						grid[i][k].state === 'start' ||
+						grid[i][k].state === 'end'
+					) {
+						grid[i][k].state = 'empty';
 					}
 				}
 			}
 
-			walkerPosition.forEach(([x, y]) => {
-				if (grid[x][y] === 'wall') return;
+			const startX = start[0];
+			const startY = start[1];
 
-				if (grid[x][y] === 'visited' || grid[x][y] === 'revisited') {
-					grid[x][y] = 'revisited';
-				} else grid[x][y] = 'visited';
-			});
+			grid[startX][startY].state = 'start';
+			openSet.push(start);
+
+			const endX = end[0];
+			const endY = end[1];
+
+			grid[endX][endY].state = 'end';
+
+			if (openSet.length > 0) {
+				// do stuff
+				let lowestIndex = 0;
+				for (let l = 0; l < openSet.length; l++) {
+					if (openSet[l].f < openSet[lowestIndex].f) {
+						lowestIndex = l;
+					}
+				}
+
+				let current = openSet[lowestIndex];
+
+				if (current === end) console.log('finished!');
+
+				removeFromArr(openSet, current);
+				closedSet.push(current);
+			} else {
+				// no solution
+			}
+
+			// walkerPosition.forEach(([x, y]) => {
+			// 	if (grid[x][y].state === 'wall') return;
+
+			// 	if (grid[x][y].state === 'visited' || grid[x][y] === 'revisited') {
+			// 		grid[x][y].state = 'revisited';
+			// 	} else grid[x][y].state = 'visited';
+			// });
 		}
 	}
 
@@ -49,133 +110,153 @@
 	}
 
 	onMount(() => {
+		if (winWidth) {
+			console.log('calc', winWidth / 30, Math.floor(winWidth / 30));
+			GRID_SIZE = Math.floor(winWidth / 30);
+		}
+		// const startX = getRandomInt(GRID_SIZE);
+		// const startY = getRandomInt(GRID_SIZE);
+
+		// start = [0, 0];
+		// grid[0][0] = 'start';
+
+		// end = [GRID_SIZE - 1, GRID_SIZE - 1];
+		// grid[GRID_SIZE - 1][GRID_SIZE - 1] = 'end';
+
+		openSet.push(start);
+
 		interval = setInterval(() => {
-			if (!paused) {
-				const lastVisited = walkerPosition[walkerPosition.length - 1];
-
-				const choice = getRandomInt(4);
-				if (musicEnabled) {
-					playAudio();
-				}
-				if (choice == 0) {
-					const newX = lastVisited[0] + 1;
-					const Y = lastVisited[1];
-
-					if (isOutOfBounds(newX)) return;
-					if (grid[newX][Y] === 'wall') return;
-					if (grid[newX][Y] === 'visited') {
-						grid[newX][Y] = 'revisited';
-					}
-
-					if (grid[newX][Y] === 'empty') visitedCellCounter++;
-					walkerPosition = [...walkerPosition, [newX, Y]];
-				} else if (choice == 1) {
-					const newX = lastVisited[0] - 1;
-					const Y = lastVisited[1];
-
-					if (isOutOfBounds(newX)) return;
-					if (grid[newX][Y] === 'wall') return;
-					if (grid[newX][Y] === 'visited') {
-						grid[newX][Y] = 'revisited';
-					}
-
-					if (grid[newX][Y] === 'empty') visitedCellCounter++;
-					walkerPosition = [...walkerPosition, [newX, Y]];
-				} else if (choice == 2) {
-					const X = lastVisited[0];
-					const newY = lastVisited[1] + 1;
-
-					if (isOutOfBounds(newY)) return;
-					if (grid[X][newY] === 'wall') return;
-					if (grid[X][newY] === 'visited') {
-						grid[X][newY] = 'revisited';
-					}
-
-					if (grid[X][newY] === 'empty') visitedCellCounter++;
-					walkerPosition = [...walkerPosition, [X, newY]];
-				} else {
-					const X = lastVisited[0];
-					const newY = lastVisited[1] - 1;
-
-					if (isOutOfBounds(newY)) return;
-					if (grid[X][newY] === 'wall') return;
-					if (grid[X][newY] === 'visited') {
-						grid[X][newY] = 'revisited';
-					}
-					if (grid[X][newY] === 'empty') visitedCellCounter++;
-					walkerPosition = [...walkerPosition, [X, newY]];
-				}
-				// } else {
-				// finished = true;
-				// clearInterval(interval);
-				// return;
-				// }
-
-				// walkerPosition = walkerPosition.concat([lastVisited[0] + randomX, lastVisited[1] + randomY]);
-			}
+			// if (!paused) {
+			// 	const lastVisited = walkerPosition[walkerPosition.length - 1];
+			// 	const choice = getRandomInt(4);
+			// 	if (musicEnabled) {
+			// 		playAudio();
+			// 	}
+			// 	if (choice == 0) {
+			// 		const newX = lastVisited[0] + 1;
+			// 		const Y = lastVisited[1];
+			// 		if (isOutOfBounds(newX)) return;
+			// 		if (grid[newX][Y] === 'wall') return;
+			// 		if (grid[newX][Y] === 'visited') {
+			// 			grid[newX][Y] = 'revisited';
+			// 		}
+			// 		if (grid[newX][Y] === 'empty') visitedCellCounter++;
+			// 		walkerPosition = [...walkerPosition, [newX, Y]];
+			// 	} else if (choice == 1) {
+			// 		const newX = lastVisited[0] - 1;
+			// 		const Y = lastVisited[1];
+			// 		if (isOutOfBounds(newX)) return;
+			// 		if (grid[newX][Y] === 'wall') return;
+			// 		if (grid[newX][Y] === 'visited') {
+			// 			grid[newX][Y] = 'revisited';
+			// 		}
+			// 		if (grid[newX][Y] === 'empty') visitedCellCounter++;
+			// 		walkerPosition = [...walkerPosition, [newX, Y]];
+			// 	} else if (choice == 2) {
+			// 		const X = lastVisited[0];
+			// 		const newY = lastVisited[1] + 1;
+			// 		if (isOutOfBounds(newY)) return;
+			// 		if (grid[X][newY] === 'wall') return;
+			// 		if (grid[X][newY] === 'visited') {
+			// 			grid[X][newY] = 'revisited';
+			// 		}
+			// 		if (grid[X][newY] === 'empty') visitedCellCounter++;
+			// 		walkerPosition = [...walkerPosition, [X, newY]];
+			// 	} else {
+			// 		const X = lastVisited[0];
+			// 		const newY = lastVisited[1] - 1;
+			// 		if (isOutOfBounds(newY)) return;
+			// 		if (grid[X][newY] === 'wall') return;
+			// 		if (grid[X][newY] === 'visited') {
+			// 			grid[X][newY] = 'revisited';
+			// 		}
+			// 		if (grid[X][newY] === 'empty') visitedCellCounter++;
+			// 		walkerPosition = [...walkerPosition, [X, newY]];
+			// 	}
+			// 	// } else {
+			// 	// finished = true;
+			// 	// clearInterval(interval);
+			// 	// return;
+			// 	// }
+			// 	// walkerPosition = walkerPosition.concat([lastVisited[0] + randomX, lastVisited[1] + randomY]);
+			// }
 		}, TICKER_TIME);
 	});
 </script>
 
+<svelte:window bind:innerWidth={winWidth} bind:innerHeight={winHeight} />
+
 <main>
-	<h1>Random Walker</h1>
+	<h1>PathFinding Visualizer</h1>
 
 	<div class="header">
 		<button on:click={() => clearInterval(interval)}>Stop</button>
 		<button on:click={() => (paused = !paused)}>{!paused ? 'Pause' : 'Resume'}</button>
 		<button
 			on:click={() => {
-				walkerPosition = [[GRID_SIZE / 2, GRID_SIZE / 2]];
+				// walkerPosition = [[GRID_SIZE / 2, GRID_SIZE / 2]];
 				grid = [...Array(GRID_SIZE)].map(() => [...Array(GRID_SIZE)].map(() => 'empty'));
 			}}>Clear</button
 		>
-		<label>
-			<input type="checkbox" bind:checked={musicEnabled} />
-			Sounds Effects
-		</label>
+
 		<!-- <p>Speed:</p>
 		<input type="number" bind:value={TICKER_TIME} /> -->
 	</div>
 
 	<div class="scoreBoard">
 		<div>Walls: {wallsCounter}</div>
-		<div>visited Cells: {walkerPosition.length}</div>
+		<!-- <div>visited Cells: {walkerPosition.length}</div> -->
 		<div>Unique visited Cells: {visitedCellCounter}</div>
 	</div>
 	<div class="center">
 		<div>
-			<!-- on:click={() => (grid[i][k] = grid[i][k] === 'wall' ? 'empty' : 'wall')} -->
-			<!-- on:mousedown={() => (grid[i][k] = grid[i][k] === 'wall' ? 'empty' : 'wall')} -->
 			{#each grid as row, i}
 				<div class="row" on:contextmenu={(e) => e.preventDefault()}>
-					<audio id="audio" src={sound} />
 					{#each row as cell, k}
 						<div
 							on:click={() => {
-								grid[i][k] = grid[i][k] === 'wall' ? 'empty' : 'wall';
+								grid[i][k].state = grid[i][k].state === 'wall' ? 'empty' : 'wall';
 
 								//update wall counter when adding and removing
-								if (grid[i][k] === 'wall') {
+								if (grid[i][k].state === 'wall') {
 									walls = [...walls, grid[i][k]];
 									wallsCounter++;
 								} else wallsCounter--;
 							}}
-							on:mousedown={(e) => {
+							on:mousedown={() => {
 								isMouseDown = true;
+
+								if (grid[i][k].state === 'start' || grid[i][k].state === 'end')
+									dragging = grid[i][k].state;
 							}}
-							on:mouseup={() => (isMouseDown = false)}
+							on:mouseup={() => {
+								isMouseDown = false;
+								dragging = false;
+							}}
 							on:mouseover={() => {
 								if (isMouseDown) {
-									grid[i][k] = grid[i][k] === 'wall' ? 'empty' : 'wall';
+									console.log('checkDragging', dragging);
+									if (dragging) {
+										if (grid[i][k].state === 'empty' && dragging) {
+											if (dragging === 'start') {
+												start = [i, k];
+											} else {
+												end = [i, k];
+											}
+										}
+										return;
+									}
+
+									grid[i][k].state = grid[i][k].state === 'wall' ? 'empty' : 'wall';
 
 									//update wall counter when adding and removing
-									if (grid[i][k] === 'wall') {
+									if (grid[i][k].state === 'wall') {
 										walls = [...walls, grid[i][k]];
 										wallsCounter++;
 									} else wallsCounter--;
 								}
 							}}
-							class={`square ${cell}`}
+							class={`square ${cell.state}`}
 						/>
 					{/each}
 				</div>
@@ -221,15 +302,20 @@
 
 	.square {
 		border: 1px solid rgba(0, 0, 0, 0.2);
-
 		stroke-opacity: 0.2;
-		width: 20px;
-		height: 20px;
+		width: 30px;
+		height: 30px;
 		box-sizing: border-box;
 	}
 
 	.empty {
 		background-color: white;
+	}
+	.start {
+		background-color: rgb(59, 151, 16);
+	}
+	.end {
+		background-color: rgb(211, 38, 38);
 	}
 
 	.visited {
