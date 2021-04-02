@@ -6,13 +6,17 @@
 	// var F : float;	//total cost
 	let winWidth;
 	let winHeight;
+	let gridLoaded = false;
 
-	let GRID_SIZE = 40;
+	let GRID_ROW_SIZE = 1;
+	let GRID_COLUMN_SIZE = 1;
+	// let GRID_SIZE = 40;
 	// let GRID_SIZE = 20;
 	let TICKER_TIME = 500;
-	let grid = [...Array(GRID_SIZE)].map(() =>
-		[...Array(GRID_SIZE)].map(() => ({ state: 'empty', f: 0, g: 0, h: 0 }))
-	);
+	// let grid = [...Array(GRID_ROW_SIZE)].map(() =>
+	// 	[...Array(GRID_COLUMN_SIZE)].map(() => ({ state: 'empty', f: 0, g: 0, h: 0 }))
+	// );
+	let grid = [];
 	// let walkerPosition = [[GRID_SIZE / 2, GRID_SIZE / 2]];
 	let walls = [];
 	let isMouseDown = false;
@@ -20,36 +24,28 @@
 	let paused = false;
 	let visitedCellCounter = 0;
 	let wallsCounter = 0;
-	let musicEnabled = false;
 
 	let dragging = false;
 
 	let openSet = [];
 	let closedSet = [];
-	// let start;
-	// let end;
 
 	let start = [0, 0];
-	grid[0][0].state = 'start';
+	let end = [GRID_ROW_SIZE - 1, GRID_COLUMN_SIZE - 1];
+	// let start = [0, 0];
+	// grid[0][0].state = 'start';
 
-	let end = [GRID_SIZE - 1, GRID_SIZE - 1];
-	grid[GRID_SIZE - 1][GRID_SIZE - 1].state = 'end';
-
-	const removeFromArr = (arr, element) => {
-		for (let i = arr.length - 1; i >= 0; i--) {
-			if ((arr[i] = element)) {
-				// arr.slice()
-				arr.splice(i, 1);
-			}
-		}
-	};
+	// let end = [GRID_ROW_SIZE - 1, GRID_COLUMN_SIZE - 1];
+	// grid[GRID_ROW_SIZE - 1][GRID_COLUMN_SIZE - 1].state = 'end';
 
 	// each cell should have h g f
 	$: {
-		console.log('AA', winWidth, GRID_SIZE);
-		if (!paused) {
-			for (let i = 0; i < grid.length; i++) {
-				for (let k = 0; k < grid.length; k++) {
+		// console.log('AA', winWidth, GRID_ROW_SIZE, GRID_COLUMN_SIZE);
+		if (!paused && grid.length > 0) {
+			console.log('grud');
+			for (let i = 0; i < GRID_ROW_SIZE; i++) {
+				for (let k = 0; k < GRID_COLUMN_SIZE; k++) {
+					// console.log('sss', grid[i][k]);
 					if (
 						grid[i][k].state === 'visited' ||
 						grid[i][k].state === 'revisited' ||
@@ -65,31 +61,31 @@
 			const startY = start[1];
 
 			grid[startX][startY].state = 'start';
-			openSet.push(start);
-
+			// openSet.push(start);
+			// end = [GRID_ROW_SIZE - 1, GRID_COLUMN_SIZE - 1];
 			const endX = end[0];
 			const endY = end[1];
 
 			grid[endX][endY].state = 'end';
 
-			if (openSet.length > 0) {
-				// do stuff
-				let lowestIndex = 0;
-				for (let l = 0; l < openSet.length; l++) {
-					if (openSet[l].f < openSet[lowestIndex].f) {
-						lowestIndex = l;
-					}
-				}
+			// if (openSet.length > 0) {
+			// 	// do stuff
+			// 	let lowestIndex = 0;
+			// 	for (let l = 0; l < openSet.length; l++) {
+			// 		if (openSet[l].f < openSet[lowestIndex].f) {
+			// 			lowestIndex = l;
+			// 		}
+			// 	}
 
-				let current = openSet[lowestIndex];
+			// 	let current = openSet[lowestIndex];
 
-				if (current === end) console.log('finished!');
+			// 	if (current === end) console.log('finished!');
 
-				removeFromArr(openSet, current);
-				closedSet.push(current);
-			} else {
-				// no solution
-			}
+			// 	removeFromArr(openSet, current);
+			// 	closedSet.push(current);
+			// } else {
+			// 	// no solution
+			// }
 
 			// walkerPosition.forEach(([x, y]) => {
 			// 	if (grid[x][y].state === 'wall') return;
@@ -105,162 +101,116 @@
 		return Math.floor(Math.random() * Math.floor(max));
 	}
 
-	function isOutOfBounds(n) {
-		return n < 0 || n > GRID_SIZE - 1;
-	}
+	// function isOutOfBounds(n) {
+	// 	return n < 0 || n > GRID_SIZE - 1;
+	// }
 
 	onMount(() => {
+		console.log('mount', winWidth, winHeight, !!winWidth);
 		if (winWidth) {
-			console.log('calc', winWidth / 30, Math.floor(winWidth / 30));
-			GRID_SIZE = Math.floor(winWidth / 30);
+			console.log('calc', Math.floor(winHeight / 30), Math.floor(winWidth / 30));
+			GRID_ROW_SIZE = Math.floor(winHeight / 30);
+			GRID_COLUMN_SIZE = Math.floor(winWidth / 30);
+
+			grid = [...Array(GRID_ROW_SIZE)].map(() =>
+				[...Array(GRID_COLUMN_SIZE)].map(() => ({ state: 'empty', f: 0, g: 0, h: 0 }))
+			);
+			console.log('check', GRID_ROW_SIZE, GRID_COLUMN_SIZE, grid);
+
+			gridLoaded = true;
+
+			grid[0][0].state = 'start';
+
+			grid[GRID_ROW_SIZE - 1][GRID_COLUMN_SIZE - 1].state = 'end';
+
+			console.log('AA', grid[0][0]);
 		}
-		// const startX = getRandomInt(GRID_SIZE);
-		// const startY = getRandomInt(GRID_SIZE);
-
-		// start = [0, 0];
-		// grid[0][0] = 'start';
-
-		// end = [GRID_SIZE - 1, GRID_SIZE - 1];
-		// grid[GRID_SIZE - 1][GRID_SIZE - 1] = 'end';
-
-		openSet.push(start);
-
-		interval = setInterval(() => {
-			// if (!paused) {
-			// 	const lastVisited = walkerPosition[walkerPosition.length - 1];
-			// 	const choice = getRandomInt(4);
-			// 	if (musicEnabled) {
-			// 		playAudio();
-			// 	}
-			// 	if (choice == 0) {
-			// 		const newX = lastVisited[0] + 1;
-			// 		const Y = lastVisited[1];
-			// 		if (isOutOfBounds(newX)) return;
-			// 		if (grid[newX][Y] === 'wall') return;
-			// 		if (grid[newX][Y] === 'visited') {
-			// 			grid[newX][Y] = 'revisited';
-			// 		}
-			// 		if (grid[newX][Y] === 'empty') visitedCellCounter++;
-			// 		walkerPosition = [...walkerPosition, [newX, Y]];
-			// 	} else if (choice == 1) {
-			// 		const newX = lastVisited[0] - 1;
-			// 		const Y = lastVisited[1];
-			// 		if (isOutOfBounds(newX)) return;
-			// 		if (grid[newX][Y] === 'wall') return;
-			// 		if (grid[newX][Y] === 'visited') {
-			// 			grid[newX][Y] = 'revisited';
-			// 		}
-			// 		if (grid[newX][Y] === 'empty') visitedCellCounter++;
-			// 		walkerPosition = [...walkerPosition, [newX, Y]];
-			// 	} else if (choice == 2) {
-			// 		const X = lastVisited[0];
-			// 		const newY = lastVisited[1] + 1;
-			// 		if (isOutOfBounds(newY)) return;
-			// 		if (grid[X][newY] === 'wall') return;
-			// 		if (grid[X][newY] === 'visited') {
-			// 			grid[X][newY] = 'revisited';
-			// 		}
-			// 		if (grid[X][newY] === 'empty') visitedCellCounter++;
-			// 		walkerPosition = [...walkerPosition, [X, newY]];
-			// 	} else {
-			// 		const X = lastVisited[0];
-			// 		const newY = lastVisited[1] - 1;
-			// 		if (isOutOfBounds(newY)) return;
-			// 		if (grid[X][newY] === 'wall') return;
-			// 		if (grid[X][newY] === 'visited') {
-			// 			grid[X][newY] = 'revisited';
-			// 		}
-			// 		if (grid[X][newY] === 'empty') visitedCellCounter++;
-			// 		walkerPosition = [...walkerPosition, [X, newY]];
-			// 	}
-			// 	// } else {
-			// 	// finished = true;
-			// 	// clearInterval(interval);
-			// 	// return;
-			// 	// }
-			// 	// walkerPosition = walkerPosition.concat([lastVisited[0] + randomX, lastVisited[1] + randomY]);
-			// }
-		}, TICKER_TIME);
 	});
 </script>
 
-<svelte:window bind:innerWidth={winWidth} bind:innerHeight={winHeight} />
-
 <main>
-	<h1>PathFinding Visualizer</h1>
+	<div class="container">
+		<div class="header">
+			<h1>PathFinding Visualizer</h1>
+			<button on:click={() => clearInterval(interval)}>Stop</button>
+			<button on:click={() => (paused = !paused)}>{!paused ? 'Pause' : 'Resume'}</button>
+			<button
+				on:click={() => {
+					// walkerPosition = [[GRID_SIZE / 2, GRID_SIZE / 2]];
+					grid = [...Array(GRID_ROW_SIZE)].map(() =>
+						[...Array(GRID_COLUMN_SIZE)].map(() => 'empty')
+					);
+				}}>Clear</button
+			>
 
-	<div class="header">
-		<button on:click={() => clearInterval(interval)}>Stop</button>
-		<button on:click={() => (paused = !paused)}>{!paused ? 'Pause' : 'Resume'}</button>
-		<button
-			on:click={() => {
-				// walkerPosition = [[GRID_SIZE / 2, GRID_SIZE / 2]];
-				grid = [...Array(GRID_SIZE)].map(() => [...Array(GRID_SIZE)].map(() => 'empty'));
-			}}>Clear</button
-		>
+			<!-- <p>Speed:</p>
+			<input type="number" bind:value={TICKER_TIME} /> -->
 
-		<!-- <p>Speed:</p>
-		<input type="number" bind:value={TICKER_TIME} /> -->
-	</div>
+			<div class="scoreBoard">
+				<div>Walls: {wallsCounter}</div>
+				<!-- <div>visited Cells: {walkerPosition.length}</div> -->
+				<div>Unique visited Cells: {visitedCellCounter}</div>
+			</div>
+		</div>
+		<div class="innerContainer">
+			<div class="center" bind:clientWidth={winWidth} bind:clientHeight={winHeight}>
+				<div class="grid">
+					<!-- <div class="grid" bind:clientWidth={winWidth} bind:clientHeight={winHeight}> -->
+					{#if gridLoaded}
+						{#each grid as row, i}
+							<div class="row" on:contextmenu={(e) => e.preventDefault()}>
+								{#each row as cell, k}
+									<div
+										on:click={() => {
+											grid[i][k].state = grid[i][k].state === 'wall' ? 'empty' : 'wall';
 
-	<div class="scoreBoard">
-		<div>Walls: {wallsCounter}</div>
-		<!-- <div>visited Cells: {walkerPosition.length}</div> -->
-		<div>Unique visited Cells: {visitedCellCounter}</div>
-	</div>
-	<div class="center">
-		<div>
-			{#each grid as row, i}
-				<div class="row" on:contextmenu={(e) => e.preventDefault()}>
-					{#each row as cell, k}
-						<div
-							on:click={() => {
-								grid[i][k].state = grid[i][k].state === 'wall' ? 'empty' : 'wall';
+											//update wall counter when adding and removing
+											if (grid[i][k].state === 'wall') {
+												walls = [...walls, grid[i][k]];
+												wallsCounter++;
+											} else wallsCounter--;
+										}}
+										on:mousedown={() => {
+											isMouseDown = true;
 
-								//update wall counter when adding and removing
-								if (grid[i][k].state === 'wall') {
-									walls = [...walls, grid[i][k]];
-									wallsCounter++;
-								} else wallsCounter--;
-							}}
-							on:mousedown={() => {
-								isMouseDown = true;
+											if (grid[i][k].state === 'start' || grid[i][k].state === 'end')
+												dragging = grid[i][k].state;
+										}}
+										on:mouseup={() => {
+											isMouseDown = false;
+											dragging = false;
+										}}
+										on:mouseover={() => {
+											if (isMouseDown) {
+												console.log('checkDragging', dragging);
+												if (dragging) {
+													if (grid[i][k].state === 'empty' && dragging) {
+														if (dragging === 'start') {
+															start = [i, k];
+														} else {
+															end = [i, k];
+														}
+													}
+													return;
+												}
 
-								if (grid[i][k].state === 'start' || grid[i][k].state === 'end')
-									dragging = grid[i][k].state;
-							}}
-							on:mouseup={() => {
-								isMouseDown = false;
-								dragging = false;
-							}}
-							on:mouseover={() => {
-								if (isMouseDown) {
-									console.log('checkDragging', dragging);
-									if (dragging) {
-										if (grid[i][k].state === 'empty' && dragging) {
-											if (dragging === 'start') {
-												start = [i, k];
-											} else {
-												end = [i, k];
+												grid[i][k].state = grid[i][k].state === 'wall' ? 'empty' : 'wall';
+
+												//update wall counter when adding and removing
+												if (grid[i][k].state === 'wall') {
+													walls = [...walls, grid[i][k]];
+													wallsCounter++;
+												} else wallsCounter--;
 											}
-										}
-										return;
-									}
-
-									grid[i][k].state = grid[i][k].state === 'wall' ? 'empty' : 'wall';
-
-									//update wall counter when adding and removing
-									if (grid[i][k].state === 'wall') {
-										walls = [...walls, grid[i][k]];
-										wallsCounter++;
-									} else wallsCounter--;
-								}
-							}}
-							class={`square ${cell.state}`}
-						/>
-					{/each}
+										}}
+										class={`square ${cell.state}`}
+									/>
+								{/each}
+							</div>
+						{/each}
+					{/if}
 				</div>
-			{/each}
+			</div>
 		</div>
 	</div>
 </main>
@@ -283,20 +233,41 @@
 		/* margin: 0 auto; */
 	}
 
+	.container {
+		height: 100vh;
+	}
+
+	.innerContainer {
+		width: 100%;
+		height: calc(100vh - 180px);
+	}
+
 	.header {
-		margin: 10px;
+		height: 180px;
+		margin: 0;
+		width: 100%;
+		background: chocolate;
+	}
+
+	.grid {
+		width: auto;
+		/* height: 80vh; */
+		/* height: calc(100vh - 180px); */
+		height: auto;
 	}
 
 	.center {
-		height: auto;
+		height: calc(100vh - 180px);
+		height: 100%;
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		padding: 0;
+		box-sizing: border-box;
 	}
 
 	.row {
 		display: flex;
-		user-drag: none;
 		user-select: none;
 	}
 
@@ -327,15 +298,16 @@
 	}
 
 	.scoreBoard {
-		border: 2px dashed black;
-		border-top: none;
-		border-right: none;
+		/* border: 2px dashed black; */
+		/* border-top: none; */
+		/* border-right: none; */
 		border-radius: 5px;
-		background: white;
-		position: absolute;
+		/* background: white; */
+		/* position: absolute; */
 		top: 0;
 		right: 0;
-		padding: 50px;
+		/* padding: 50px; */
+		/* z-index: 200; */
 	}
 
 	@keyframes slidein {
@@ -348,12 +320,14 @@
 	}
 
 	.wall {
-		background-color: rgb(48, 48, 48);
+		/* background-color: rgb(48, 48, 48); */
+		background-color: #34495e;
 		animation: slidein 0.2s ease-in forwards;
 	}
 
 	h1 {
-		color: #ff3e00;
+		/* color: #ff3e00; */
+		color: white;
 		font-family: monospace;
 		text-transform: uppercase;
 		font-size: 4rem;
