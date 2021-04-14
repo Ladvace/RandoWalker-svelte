@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { generateRandomMaze } from '$lib/Algorithms/mazeGeneration';
 
 	// var G : float;	//distance from the starting node to the best node
 	// var H : float;	//hurestic distance from the best node to the destination
@@ -8,11 +9,9 @@
 	let winHeight;
 	let gridLoaded = false;
 
-	let GRID_ROW_SIZE = 1;
-	let GRID_COLUMN_SIZE = 1;
-	// let GRID_SIZE = 40;
-	// let GRID_SIZE = 20;
-	let TICKER_TIME = 500;
+	let GRID_ROW_SIZE;
+	let GRID_COLUMN_SIZE;
+
 	// let grid = [...Array(GRID_ROW_SIZE)].map(() =>
 	// 	[...Array(GRID_COLUMN_SIZE)].map(() => ({ state: 'empty', f: 0, g: 0, h: 0 }))
 	// );
@@ -31,21 +30,18 @@
 	let closedSet = [];
 
 	let start = [0, 0];
-	let end = [GRID_ROW_SIZE - 1, GRID_COLUMN_SIZE - 1];
-	// let start = [0, 0];
-	// grid[0][0].state = 'start';
+	let end = [];
 
+	// let start = [0, 0];
 	// let end = [GRID_ROW_SIZE - 1, GRID_COLUMN_SIZE - 1];
-	// grid[GRID_ROW_SIZE - 1][GRID_COLUMN_SIZE - 1].state = 'end';
 
 	// each cell should have h g f
 	$: {
 		// console.log('AA', winWidth, GRID_ROW_SIZE, GRID_COLUMN_SIZE);
-		if (!paused && grid.length > 0) {
+		if (!paused && grid.length > 0 && GRID_ROW_SIZE && GRID_COLUMN_SIZE && gridLoaded) {
 			console.log('grud');
 			for (let i = 0; i < GRID_ROW_SIZE; i++) {
 				for (let k = 0; k < GRID_COLUMN_SIZE; k++) {
-					// console.log('sss', grid[i][k]);
 					if (
 						grid[i][k].state === 'visited' ||
 						grid[i][k].state === 'revisited' ||
@@ -66,7 +62,11 @@
 			const endX = end[0];
 			const endY = end[1];
 
-			grid[endX][endY].state = 'end';
+			// ---- here
+
+			console.log('GRID', end, endX, endY, grid[26], grid);
+
+			if (grid[endX]) grid[endX][endY].state = 'end';
 
 			// if (openSet.length > 0) {
 			// 	// do stuff
@@ -106,8 +106,7 @@
 	// }
 
 	onMount(() => {
-		console.log('mount', winWidth, winHeight, !!winWidth);
-		if (winWidth) {
+		if (winWidth && winHeight) {
 			console.log('calc', Math.floor(winHeight / 30), Math.floor(winWidth / 30));
 			GRID_ROW_SIZE = Math.floor(winHeight / 30);
 			GRID_COLUMN_SIZE = Math.floor(winWidth / 30);
@@ -115,23 +114,31 @@
 			grid = [...Array(GRID_ROW_SIZE)].map(() =>
 				[...Array(GRID_COLUMN_SIZE)].map(() => ({ state: 'empty', f: 0, g: 0, h: 0 }))
 			);
-			console.log('check', GRID_ROW_SIZE, GRID_COLUMN_SIZE, grid);
-
-			gridLoaded = true;
 
 			grid[0][0].state = 'start';
 
 			grid[GRID_ROW_SIZE - 1][GRID_COLUMN_SIZE - 1].state = 'end';
 
-			console.log('AA', grid[0][0]);
+			end = [GRID_ROW_SIZE - 1, GRID_COLUMN_SIZE - 1];
+			gridLoaded = true;
 		}
 	});
 </script>
 
+<svelte:body
+	on:mouseleave={() => {
+		console.log('out');
+		dragging = false;
+	}} />
+
 <main>
-	<div class="container">
+	<div class="container" style="--header-size: 150px">
 		<div class="header">
 			<h1>PathFinding Visualizer</h1>
+			<button
+				on:click={() => (grid = generateRandomMaze(GRID_ROW_SIZE, GRID_COLUMN_SIZE, start, end))}
+				>mazeGen</button
+			>
 			<button on:click={() => clearInterval(interval)}>Stop</button>
 			<button on:click={() => (paused = !paused)}>{!paused ? 'Pause' : 'Resume'}</button>
 			<button
@@ -142,9 +149,6 @@
 					);
 				}}>Clear</button
 			>
-
-			<!-- <p>Speed:</p>
-			<input type="number" bind:value={TICKER_TIME} /> -->
 
 			<div class="scoreBoard">
 				<div>Walls: {wallsCounter}</div>
@@ -208,6 +212,8 @@
 								{/each}
 							</div>
 						{/each}
+					{:else}
+						Loding
 					{/if}
 				</div>
 			</div>
@@ -235,15 +241,16 @@
 
 	.container {
 		height: 100vh;
+		overflow: hidden;
 	}
 
 	.innerContainer {
 		width: 100%;
-		height: calc(100vh - 180px);
+		height: calc(100vh - var(--header-size));
 	}
 
 	.header {
-		height: 180px;
+		height: var(--header-size);
 		margin: 0;
 		width: 100%;
 		background: chocolate;
@@ -257,7 +264,7 @@
 	}
 
 	.center {
-		height: calc(100vh - 180px);
+		height: calc(100vh - var(--header-size));
 		height: 100%;
 		display: flex;
 		justify-content: center;
