@@ -1,6 +1,10 @@
 <script>
 	import { onMount } from 'svelte';
-	import { generateRandomMaze } from '$lib/Algorithms/mazeGeneration';
+	import generateRandomMaze from '$lib/Algorithms/MazeGen/RandomMazeGeneration';
+	import { Astar } from '$lib/Algorithms/Astar';
+	import Sidewinder from '$lib/Algorithms/MazeGen/Sidewinder';
+	import BubbleSort from '$lib/Algorithms/Sorting/BubbleSort';
+	import shuffledGradientGen from '$lib/Algorithms/shuffledGradientGen';
 
 	// var G : float;	//distance from the starting node to the best node
 	// var H : float;	//hurestic distance from the best node to the destination
@@ -12,11 +16,8 @@
 	let GRID_ROW_SIZE;
 	let GRID_COLUMN_SIZE;
 
-	// let grid = [...Array(GRID_ROW_SIZE)].map(() =>
-	// 	[...Array(GRID_COLUMN_SIZE)].map(() => ({ state: 'empty', f: 0, g: 0, h: 0 }))
-	// );
 	let grid = [];
-	// let walkerPosition = [[GRID_SIZE / 2, GRID_SIZE / 2]];
+
 	let walls = [];
 	let isMouseDown = false;
 	let interval;
@@ -25,9 +26,6 @@
 	let wallsCounter = 0;
 
 	let dragging = false;
-
-	let openSet = [];
-	let closedSet = [];
 
 	let start = [0, 0];
 	let end = [];
@@ -57,53 +55,13 @@
 			const startY = start[1];
 
 			grid[startX][startY].state = 'start';
-			// openSet.push(start);
-			// end = [GRID_ROW_SIZE - 1, GRID_COLUMN_SIZE - 1];
+
 			const endX = end[0];
 			const endY = end[1];
 
-			// ---- here
-
-			console.log('GRID', end, endX, endY, grid[26], grid);
-
 			if (grid[endX]) grid[endX][endY].state = 'end';
-
-			// if (openSet.length > 0) {
-			// 	// do stuff
-			// 	let lowestIndex = 0;
-			// 	for (let l = 0; l < openSet.length; l++) {
-			// 		if (openSet[l].f < openSet[lowestIndex].f) {
-			// 			lowestIndex = l;
-			// 		}
-			// 	}
-
-			// 	let current = openSet[lowestIndex];
-
-			// 	if (current === end) console.log('finished!');
-
-			// 	removeFromArr(openSet, current);
-			// 	closedSet.push(current);
-			// } else {
-			// 	// no solution
-			// }
-
-			// walkerPosition.forEach(([x, y]) => {
-			// 	if (grid[x][y].state === 'wall') return;
-
-			// 	if (grid[x][y].state === 'visited' || grid[x][y] === 'revisited') {
-			// 		grid[x][y].state = 'revisited';
-			// 	} else grid[x][y].state = 'visited';
-			// });
 		}
 	}
-
-	function getRandomInt(max) {
-		return Math.floor(Math.random() * Math.floor(max));
-	}
-
-	// function isOutOfBounds(n) {
-	// 	return n < 0 || n > GRID_SIZE - 1;
-	// }
 
 	onMount(() => {
 		if (winWidth && winHeight) {
@@ -115,30 +73,47 @@
 				[...Array(GRID_COLUMN_SIZE)].map(() => ({ state: 'empty', f: 0, g: 0, h: 0 }))
 			);
 
-			grid[0][0].state = 'start';
-
-			grid[GRID_ROW_SIZE - 1][GRID_COLUMN_SIZE - 1].state = 'end';
-
-			end = [GRID_ROW_SIZE - 1, GRID_COLUMN_SIZE - 1];
+			start = [1, 1];
+			end = [GRID_ROW_SIZE - 2, GRID_COLUMN_SIZE - 2];
 			gridLoaded = true;
 		}
 	});
 </script>
 
-<svelte:body
+<!-- <svelte:body
 	on:mouseleave={() => {
 		console.log('out');
 		dragging = false;
-	}} />
+	}} /> -->
 
 <main>
-	<div class="container" style="--header-size: 150px">
+	<div class="container" style="--header-size: 100px">
 		<div class="header">
 			<h1>PathFinding Visualizer</h1>
 			<button
 				on:click={() => (grid = generateRandomMaze(GRID_ROW_SIZE, GRID_COLUMN_SIZE, start, end))}
 				>mazeGen</button
 			>
+
+			<button
+				on:click={() => {
+					const shuffled = shuffledGradientGen(grid, GRID_ROW_SIZE, GRID_COLUMN_SIZE);
+					console.log('grid', grid);
+					grid = BubbleSort(shuffled, GRID_ROW_SIZE, GRID_COLUMN_SIZE);
+				}}>BoobleSort</button
+			>
+
+			<button
+				on:click={() => {
+					grid = [...Array(GRID_ROW_SIZE)].map(() =>
+						[...Array(GRID_COLUMN_SIZE)].map(() => ({
+							state: 'wall'
+						}))
+					);
+					grid = Sidewinder(grid, GRID_ROW_SIZE, GRID_COLUMN_SIZE);
+				}}
+				>Sidewinder
+			</button>
 			<button on:click={() => clearInterval(interval)}>Stop</button>
 			<button on:click={() => (paused = !paused)}>{!paused ? 'Pause' : 'Resume'}</button>
 			<button
@@ -165,6 +140,7 @@
 							<div class="row" on:contextmenu={(e) => e.preventDefault()}>
 								{#each row as cell, k}
 									<div
+										style={grid[i][k]?.color && `background: #${grid[i][k]?.color}`}
 										on:click={() => {
 											grid[i][k].state = grid[i][k].state === 'wall' ? 'empty' : 'wall';
 
@@ -286,6 +262,9 @@
 		box-sizing: border-box;
 	}
 
+	.visited {
+		background-color: rgb(233, 211, 16);
+	}
 	.empty {
 		background-color: white;
 	}

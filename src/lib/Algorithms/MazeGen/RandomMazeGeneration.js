@@ -20,4 +20,4 @@ const generateRandomMaze = (numRows, numCols, start, end) => {
 	return gridCopy;
 };
 
-export { generateRandomMaze };
+export default generateRandomMaze;
